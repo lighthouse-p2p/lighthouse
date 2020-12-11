@@ -3,6 +3,8 @@ package rtc
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
@@ -29,6 +31,7 @@ func (s *Session) Init(nickname string, st state.State) error {
 	}
 
 	s.RemotePeer.PubKey = pubKey
+	s.RemotePeer.NickName = nickname
 	s.State = st
 
 	config := webrtc.Configuration{
@@ -70,6 +73,25 @@ func (s *Session) Init(nickname string, st state.State) error {
 	}
 
 	st.SignalingClient.Push(string(jsonSignal))
+
+	for {
+		if _, ok := st.SignalingClient.Chans[pubKey]; ok {
+			remoteSDP := <-st.SignalingClient.Chans[pubKey]
+
+			var remoteDesc webrtc.SessionDescription
+			err = utils.Decode(remoteSDP, &remoteDesc)
+			if err != nil {
+				continue
+			}
+
+			peerConnection.SetRemoteDescription(remoteDesc)
+			log.Println("Connected!")
+			break
+		} else {
+			time.Sleep(250 * time.Millisecond)
+			continue
+		}
+	}
 
 	return nil
 }

@@ -66,6 +66,7 @@ func (s *Session) Init(nickname string, st state.State) error {
 		To:   pubKey,
 		From: st.Metadata.PubKey,
 		SDP:  encodedLocalSDP,
+		Type: "o",
 	}
 	jsonSignal, err := json.Marshal(sig)
 	if err != nil {
@@ -84,7 +85,11 @@ func (s *Session) Init(nickname string, st state.State) error {
 				continue
 			}
 
-			peerConnection.SetRemoteDescription(remoteDesc)
+			err = peerConnection.SetRemoteDescription(remoteDesc)
+			if err != nil {
+				return err
+			}
+
 			log.Println("Connected!")
 			break
 		} else {

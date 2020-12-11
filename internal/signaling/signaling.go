@@ -97,11 +97,17 @@ func (c *Client) Listen() {
 				continue
 			}
 
-			if _, ok := c.Chans[signal.From]; !ok {
-				c.Chans[signal.From] = make(chan string, 5)
-			}
+			if signal.Type == "a" {
+				if _, ok := c.Chans[signal.From]; !ok {
+					c.Chans[signal.From] = make(chan string, 5)
+				}
 
-			c.Chans[signal.From] <- signal.SDP
+				c.Chans[signal.From] <- signal.SDP
+			} else if signal.Type == "o" {
+				// Handle Offer
+			} else {
+				continue
+			}
 		}
 	}()
 }

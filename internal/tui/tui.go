@@ -42,6 +42,16 @@ func StartNewUserFlow() {
 	survey.Ask(NewUserFlow, answers)
 
 	if answers.Register {
+		host := "localhost:3000"
+		survey.AskOne(
+			&survey.Input{
+				Message: "Host:",
+				Default: "localhost:3000",
+			},
+			&host,
+			survey.WithValidator(survey.Required),
+		)
+
 		validationRegex := regexp.MustCompile("^[a-z]+$")
 
 		nickname := ""
@@ -81,7 +91,7 @@ func StartNewUserFlow() {
 
 		done = make(chan bool)
 		go Spinner(done, "Registering", "Registered")
-		err = api.Register("http://localhost:3000/v1/register", publicKeyBase64, nickname)
+		err = api.Register(fmt.Sprintf("http://%s/v1/register", host), publicKeyBase64, nickname)
 
 		if err != nil {
 			done <- true
@@ -102,6 +112,7 @@ func StartNewUserFlow() {
 			PubKey:   publicKeyBase64,
 			PrivKey:  privateKeyBase64,
 			NickName: nickname,
+			Host:     host,
 		})
 		if err != nil {
 			log.Fatalf("%s\n", err)

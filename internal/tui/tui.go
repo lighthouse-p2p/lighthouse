@@ -14,8 +14,10 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
+	"github.com/lighthouse-p2p/lighthouse/internal/http"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
 	"github.com/lighthouse-p2p/lighthouse/internal/signaling"
+	"github.com/lighthouse-p2p/lighthouse/internal/state"
 	"github.com/logrusorgru/aurora"
 	"github.com/tj/go-spin"
 	"golang.org/x/crypto/nacl/sign"
@@ -156,7 +158,24 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 	time.Sleep(1 * time.Second)
 	done <- true
 
+	state := &state.State{}
+	state.Metadata = metadata
+
+	// sess := &rtc.Session{}
+
+	fmt.Printf("\n")
+	// err = sess.Init("hjba", *state)
+
+	// if err != nil {
+	// 	log.Fatalf("%s\n", err)
+	// }
+
 	time.Sleep(64 * time.Millisecond)
+	go http.InitFileServer(metadata)
+
+	select {}
+
+	// time.Sleep(64 * time.Millisecond)
 }
 
 // Spinner creates a terminal loading prompt

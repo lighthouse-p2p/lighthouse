@@ -31,6 +31,13 @@ func main() {
 			log.Fatalln("Invalid metadata")
 		}
 
-		tui.AlreadyRegisteredFlow(metadata)
+		if _, err := os.Stat("data/"); os.IsNotExist(err) {
+			log.Fatalln("data/ not found\nThis directory is served when a new peer connection is made\nPlease make the data/ directory to connect")
+		}
+
+		go tui.AlreadyRegisteredFlow(metadata)
+
+		// Block forever
+		select {}
 	}
 }

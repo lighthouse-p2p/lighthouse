@@ -9,7 +9,7 @@ import (
 )
 
 // Resolve fetches the public key for a nickname
-func Resolve(url, pubKey, nickName string) (string, error) {
+func Resolve(url, nickname string) (string, error) {
 	client := httpclient.NewClient()
 
 	req, err := http.NewRequest("GET", url, nil)

@@ -1,8 +1,10 @@
 package rtc
 
 import (
+	"fmt"
 	"log"
 
+	"github.com/lighthouse-p2p/lighthouse/internal/api"
 	"github.com/lighthouse-p2p/lighthouse/internal/state"
 	"github.com/lighthouse-p2p/lighthouse/internal/utils"
 	"github.com/pion/webrtc/v2"
@@ -19,11 +21,14 @@ type Session struct {
 }
 
 // Init initializes a WebRTC session
-func (s *Session) Init(pubKey string, st state.State) error {
+func (s *Session) Init(nickname string, st state.State) error {
+	pubKey, err := api.Resolve(fmt.Sprintf("http://%s/v1/resolve", st.Metadata.Host), nickname)
+	if err != nil {
+		return err
+	}
+
 	s.RemotePeer.PubKey = pubKey
 	s.State = st
-
-	// TODO: Resolve the pubKey
 
 	config := webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{

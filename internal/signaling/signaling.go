@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/gorilla/websocket"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
@@ -25,6 +26,7 @@ func (c *Client) Init(metadata models.Metadata) error {
 	addr := fmt.Sprintf("ws://%s/v1/ws/signaling?pub_key=%s", metadata.Host, metadata.PubKey)
 
 	c.Metadata = metadata
+	c.Chans = make(map[string]chan string)
 
 	connection, _, err := websocket.DefaultDialer.Dial(addr, nil)
 	if err != nil {
@@ -105,8 +107,11 @@ func (c *Client) Listen() {
 					c.Chans[signal.From] = make(chan string, 5)
 				}
 
+				log.Println("Got answer")
+
 				c.Chans[signal.From] <- signal.SDP
 			} else if signal.Type == "o" {
+				log.Println("Got offer")
 				c.SignalChan <- signal
 			} else {
 				continue
@@ -117,6 +122,7 @@ func (c *Client) Listen() {
 
 // Push sends a message on the socket
 func (c *Client) Push(msg string) error {
+	log.Println("Pushed")
 	return c.Connection.WriteMessage(1, []byte(msg))
 }
 

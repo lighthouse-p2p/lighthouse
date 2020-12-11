@@ -155,11 +155,14 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 		os.Exit(1)
 	}
 
+	signalingClient.Listen()
+
 	time.Sleep(1 * time.Second)
 	done <- true
 
 	state := &state.State{}
 	state.Metadata = metadata
+	state.SignalingClient = signalingClient
 
 	// sess := &rtc.Session{}
 

@@ -1,10 +1,11 @@
 package rtc
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
+	"github.com/lighthouse-p2p/lighthouse/internal/models"
 	"github.com/lighthouse-p2p/lighthouse/internal/state"
 	"github.com/lighthouse-p2p/lighthouse/internal/utils"
 	"github.com/pion/webrtc/v2"
@@ -43,23 +44,32 @@ func (s *Session) Init(nickname string, st state.State) error {
 		return err
 	}
 
-	answer, err := peerConnection.CreateOffer(nil)
+	offer, err := peerConnection.CreateOffer(nil)
 	if err != nil {
 		return err
 	}
 
-	peerConnection.SetLocalDescription(answer)
+	peerConnection.SetLocalDescription(offer)
 
-	answerNew := *peerConnection.LocalDescription()
+	localSDP := *peerConnection.LocalDescription()
 
-	answerNew.SDP = utils.StripSDP(answerNew.SDP)
-	resp, err := utils.Encode(answerNew)
+	localSDP.SDP = utils.StripSDP(localSDP.SDP)
+	encodedLocalSDP, err := utils.Encode(localSDP)
 	if err != nil {
 		return err
 	}
 
-	log.Println(answerNew)
-	log.Println(resp)
+	sig := models.Signal{
+		To:   pubKey,
+		From: st.Metadata.PubKey,
+		SDP:  encodedLocalSDP,
+	}
+	jsonSignal, err := json.Marshal(sig)
+	if err != nil {
+		return err
+	}
+
+	st.SignalingClient.Push(string(jsonSignal))
 
 	return nil
 }

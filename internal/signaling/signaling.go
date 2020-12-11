@@ -17,6 +17,7 @@ type Client struct {
 	Addr       string
 	Connection *websocket.Conn
 	Chans      map[string]chan string
+	SignalChan chan models.Signal
 }
 
 // Init will authenticate with the signalling server
@@ -73,6 +74,8 @@ func (c *Client) Init(metadata models.Metadata) error {
 		return errors.New("The signature didn't match the public key")
 	}
 
+	c.SignalChan = make(chan models.Signal, 32)
+
 	return nil
 }
 
@@ -104,7 +107,7 @@ func (c *Client) Listen() {
 
 				c.Chans[signal.From] <- signal.SDP
 			} else if signal.Type == "o" {
-				// Handle Offer
+				c.SignalChan <- signal
 			} else {
 				continue
 			}

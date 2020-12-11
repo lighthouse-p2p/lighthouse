@@ -16,6 +16,7 @@ import (
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
 	"github.com/lighthouse-p2p/lighthouse/internal/http"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
+	"github.com/lighthouse-p2p/lighthouse/internal/rtc"
 	"github.com/lighthouse-p2p/lighthouse/internal/signaling"
 	"github.com/lighthouse-p2p/lighthouse/internal/state"
 	"github.com/logrusorgru/aurora"
@@ -156,6 +157,16 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 	}
 
 	signalingClient.Listen()
+	go func() {
+		for {
+			signal := <-signalingClient.SignalChan
+
+			sess := &rtc.Session{}
+			sess.InitAnswer(signal, func(s string) {
+				signalingClient.Push(s)
+			})
+		}
+	}()
 
 	time.Sleep(1 * time.Second)
 	done <- true

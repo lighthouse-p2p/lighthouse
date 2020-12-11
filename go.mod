@@ -19,5 +19,6 @@ require (
 	github.com/pion/turn/v2 v2.0.5 // indirect
 	github.com/pion/webrtc/v2 v2.2.26
 	github.com/tj/go-spin v1.1.0
+	github.com/xtaci/smux v1.5.15
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 )

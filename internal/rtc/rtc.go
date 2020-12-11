@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"time"
 
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
+	"github.com/lighthouse-p2p/lighthouse/internal/rtc/wrapper"
 	"github.com/lighthouse-p2p/lighthouse/internal/state"
 	"github.com/lighthouse-p2p/lighthouse/internal/utils"
 	"github.com/pion/webrtc/v2"
+	"github.com/xtaci/smux"
 )
 
 // Session holds all the session information for a WebRTC session
@@ -87,7 +90,49 @@ func (s *Session) Init(nickname string, st state.State) error {
 				return err
 			}
 
-			log.Println("Connected!")
+			dataChannel, err := peerConnection.CreateDataChannel("data", nil)
+			if err != nil {
+				return err
+			}
+
+			dataChannel.OnOpen(func() {
+				log.Println("Connection seems to be up, preparing a multiplexed session")
+
+				proxySrv, err := net.Listen("tcp4", "127.0.0.1:3005")
+				if err != nil {
+					panic(err)
+				}
+
+				conn, err := wrapper.WrapConn(dataChannel, &wrapper.NilAddr{}, &wrapper.NilAddr{})
+				if err != nil {
+					dataChannel.Close()
+					peerConnection.Close()
+				}
+
+				session, err := smux.Client(conn, nil)
+				if err != nil {
+					panic(err)
+				}
+
+				for {
+					l, err := proxySrv.Accept()
+					if err != nil {
+						panic(err)
+					}
+
+					go func(c net.Conn) {
+						stream, err := session.OpenStream()
+						if err != nil {
+							panic(err)
+						}
+
+						log.Printf("New stream, %d total streams!\n", session.NumStreams())
+
+						go wrapper.JoinStreams(stream, c)
+					}(l)
+				}
+			})
+
 			break
 		} else {
 			time.Sleep(250 * time.Millisecond)
@@ -153,6 +198,47 @@ func (s *Session) InitAnswer(signal models.Signal, push func(string)) error {
 	push(string(jsonSignal))
 
 	// setup data channel
+	peerConnection.OnDataChannel(func(d *webrtc.DataChannel) {
+		fmt.Printf("New DataChannel %s %d\n", d.Label(), d.ID())
+
+		// Register channel opening handling
+		d.OnOpen(func() {
+			log.Println("Connection seems to be up, preparing a multiplexed session")
+
+			conn, err := wrapper.WrapConn(d, &wrapper.NilAddr{}, &wrapper.NilAddr{})
+			if err != nil {
+				d.Close()
+				peerConnection.Close()
+				panic(err)
+			}
+
+			session, err := smux.Server(conn, nil)
+			if err != nil {
+				d.Close()
+				peerConnection.Close()
+				panic(err)
+			}
+
+			for {
+				stream, err := session.AcceptStream()
+				if err != nil {
+					session.Close()
+					d.Close()
+					peerConnection.Close()
+					panic(err)
+				}
+
+				go func(stream *smux.Stream) {
+					proxyConn, err := net.Dial("tcp4", "localhost:42011")
+					if err != nil {
+						panic(err)
+					}
+
+					wrapper.JoinStreams(stream, proxyConn)
+				}(stream)
+			}
+		})
+	})
 
 	return nil
 }

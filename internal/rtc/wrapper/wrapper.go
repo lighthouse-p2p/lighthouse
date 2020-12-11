@@ -1,9 +1,11 @@
 package wrapper
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"sync"
 	"time"
@@ -125,4 +127,25 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 // SetWriteDeadline TODO
 func (c *Conn) SetWriteDeadline(t time.Time) error {
 	panic("TODO")
+}
+
+// JoinStreams can proxy data from stream 1 to stream 2 and vice-versa
+func JoinStreams(c1, c2 net.Conn) {
+	defer c1.Close()
+	defer c2.Close()
+
+	errc := make(chan error, 2)
+	go func() {
+		_, err := io.Copy(c1, c2)
+		errc <- err
+	}()
+	go func() {
+		_, err := io.Copy(c2, c1)
+		errc <- err
+	}()
+	err := <-errc
+
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, context.Canceled) {
+		log.Printf("Stream err %s\n", err)
+	}
 }

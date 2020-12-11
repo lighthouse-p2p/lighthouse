@@ -4,11 +4,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/gorilla/websocket"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
-	"github.com/logrusorgru/aurora"
 	"golang.org/x/crypto/nacl/sign"
 )
 
@@ -56,12 +54,22 @@ func (c *Client) Init(metadata models.Metadata) error {
 	signature := sign.Sign(nil, message, &privateKey)
 	connection.WriteMessage(2, signature)
 
-	connection.SetCloseHandler(func(_ int, _ string) error {
-		fmt.Printf("\r  %s\n", aurora.Bold(aurora.Red("Signaling socket closed ✕")))
-		os.Exit(1)
+	mt, message, err = connection.ReadMessage()
+	if err != nil {
+		if websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err) {
+			return errors.New("The signature didn't match the public key")
+		}
 
-		return nil
-	})
+		return err
+	}
+
+	if mt != 1 {
+		return errors.New("Unexpected socket message")
+	}
+
+	if string(message) != "OK" {
+		return errors.New("The signature didn't match the public key")
+	}
 
 	return nil
 }

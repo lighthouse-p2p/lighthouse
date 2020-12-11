@@ -153,7 +153,7 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 
 	time.Sleep(1 * time.Second)
 	done <- true
-	time.Sleep(3 * time.Second)
+
 	time.Sleep(64 * time.Millisecond)
 }
 

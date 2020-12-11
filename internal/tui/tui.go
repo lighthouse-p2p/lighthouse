@@ -177,14 +177,15 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 
 	// sess := &rtc.Session{}
 
-	fmt.Printf("\n")
-	// err = sess.Init("hjba", *state)
+	// time.Sleep(6 * time.Second)
+	// err = sess.Init("akshitg", *state)
 
 	// if err != nil {
 	// 	log.Fatalf("%s\n", err)
 	// }
 
-	time.Sleep(64 * time.Millisecond)
+	time.Sleep(250 * time.Millisecond)
+	fmt.Printf("\n")
 	go http.InitFileServer(metadata)
 
 	select {}

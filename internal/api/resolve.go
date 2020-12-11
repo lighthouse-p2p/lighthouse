@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -12,7 +13,7 @@ import (
 func Resolve(url, nickname string) (string, error) {
 	client := httpclient.NewClient()
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", url, nickname), nil)
 	if err != nil {
 		return "", err
 	}

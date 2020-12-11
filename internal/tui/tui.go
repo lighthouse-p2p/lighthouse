@@ -15,6 +15,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
+	"github.com/lighthouse-p2p/lighthouse/internal/signaling"
 	"github.com/logrusorgru/aurora"
 	"github.com/tj/go-spin"
 	"golang.org/x/crypto/nacl/sign"
@@ -130,6 +131,30 @@ func StartNewUserFlow() {
 	} else {
 		return
 	}
+}
+
+// AlreadyRegisteredFlow is run when metadata.json is present
+func AlreadyRegisteredFlow(metadata models.Metadata) {
+	done := make(chan bool)
+	go Spinner(done, "Authenticating", "Authenticated")
+
+	signalingClient := &signaling.Client{}
+	err := signalingClient.Init(metadata)
+
+	if err != nil {
+		done <- true
+		time.Sleep(64 * time.Millisecond)
+
+		fmt.Printf("\r  %s\n", aurora.Bold(aurora.Red("Authentication failed ✕")))
+		fmt.Printf("  %s %s\n", aurora.Bold(aurora.Red("Error:")), err)
+
+		os.Exit(1)
+	}
+
+	time.Sleep(1 * time.Second)
+	done <- true
+	time.Sleep(3 * time.Second)
+	time.Sleep(64 * time.Millisecond)
 }
 
 // Spinner creates a terminal loading prompt

@@ -73,3 +73,8 @@ func (c *Client) Init(metadata models.Metadata) error {
 
 	return nil
 }
+
+// Close disconnects cleanly
+func (c *Client) Close() {
+	c.Connection.Close()
+}

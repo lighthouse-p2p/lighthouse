@@ -141,6 +141,8 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 	signalingClient := &signaling.Client{}
 	err := signalingClient.Init(metadata)
 
+	defer signalingClient.Close()
+
 	if err != nil {
 		done <- true
 		time.Sleep(64 * time.Millisecond)

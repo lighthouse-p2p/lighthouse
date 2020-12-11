@@ -2,6 +2,7 @@ package signaling
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -15,6 +16,7 @@ type Client struct {
 	Metadata   models.Metadata
 	Addr       string
 	Connection *websocket.Conn
+	Chans      map[string]chan string
 }
 
 // Init will authenticate with the signalling server
@@ -72,6 +74,41 @@ func (c *Client) Init(metadata models.Metadata) error {
 	}
 
 	return nil
+}
+
+// Listen gets and processes all the messages
+func (c *Client) Listen() {
+	go func() {
+		connection := c.Connection
+
+		for {
+			_, message, err := connection.ReadMessage()
+			if err != nil {
+				if websocket.IsCloseError(err) || websocket.IsUnexpectedCloseError(err) {
+					break
+				}
+
+				continue
+			}
+
+			var signal models.Signal
+			err = json.Unmarshal(message, &signal)
+			if err != nil || signal.From == "" {
+				continue
+			}
+
+			if _, ok := c.Chans[signal.From]; !ok {
+				c.Chans[signal.From] = make(chan string, 5)
+			}
+
+			c.Chans[signal.From] <- signal.SDP
+		}
+	}()
+}
+
+// Push sends a message on the socket
+func (c *Client) Push(msg string) error {
+	return c.Connection.WriteMessage(1, []byte(msg))
 }
 
 // Close disconnects cleanly

@@ -3,8 +3,10 @@ package tui
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
+	"github.com/lighthouse-p2p/lighthouse/internal/models"
 	"github.com/logrusorgru/aurora"
 	"github.com/tj/go-spin"
 	"golang.org/x/crypto/nacl/sign"
@@ -71,14 +74,14 @@ func StartNewUserFlow() {
 		}
 
 		publicKeyBase64 := base64.StdEncoding.EncodeToString(publicKey[:])
-		_ = base64.StdEncoding.EncodeToString(privateKey[:])
+		privateKeyBase64 := base64.StdEncoding.EncodeToString(privateKey[:])
 
 		time.Sleep(1 * time.Second)
 		done <- true
 
 		done = make(chan bool)
 		go Spinner(done, "Registering", "Registered")
-		err = api.Register("https://localhost:4892/v1/register", publicKeyBase64, nickname)
+		err = api.Register("http://localhost:3000/v1/register", publicKeyBase64, nickname)
 
 		if err != nil {
 			done <- true
@@ -94,6 +97,25 @@ func StartNewUserFlow() {
 		done <- true
 
 		time.Sleep(64 * time.Millisecond)
+
+		metadata, err := json.Marshal(models.Metadata{
+			PubKey:   publicKeyBase64,
+			PrivKey:  privateKeyBase64,
+			NickName: nickname,
+		})
+		if err != nil {
+			log.Fatalf("%s\n", err)
+		}
+
+		f, err := os.Create("metadata.json")
+		if err != nil {
+			log.Fatalf("%s\n", err)
+		}
+
+		_, err = f.WriteString(string(metadata))
+		if err != nil {
+			log.Fatalf("%s\n", err)
+		}
 	} else {
 		return
 	}

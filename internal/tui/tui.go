@@ -1,13 +1,20 @@
 package tui
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
 	"fmt"
-	"sync"
+	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/lighthouse-p2p/lighthouse/internal/api"
 	"github.com/logrusorgru/aurora"
 	"github.com/tj/go-spin"
+	"golang.org/x/crypto/nacl/sign"
 )
 
 // NewUserFlow is the TUI flow used when lighthouse metadata is missing
@@ -32,35 +39,92 @@ func StartNewUserFlow() {
 	survey.Ask(NewUserFlow, answers)
 
 	if answers.Register {
+		validationRegex := regexp.MustCompile("^[a-z]+$")
+
+		nickname := ""
+		survey.AskOne(
+			&survey.Input{
+				Message: "Nickname:",
+			},
+			&nickname,
+			survey.WithValidator(survey.Required),
+			survey.WithValidator(func(val interface{}) error {
+				if !validationRegex.Match([]byte(val.(string))) {
+					return errors.New("Nickname must be a-z in lower case")
+				}
+
+				return nil
+			}),
+		)
+
+		done := make(chan bool)
+		go Spinner(done, "Generating a keypair", "Done")
+
+		publicKey, privateKey, err := sign.GenerateKey(rand.Reader)
+		if err != nil {
+			done <- true
+
+			fmt.Printf("%s\n", aurora.Bold(aurora.Red("Cannot generate keypair ✕")))
+			fmt.Printf("Error: %s\n", err)
+
+			os.Exit(1)
+		}
+
+		publicKeyBase64 := base64.StdEncoding.EncodeToString(publicKey[:])
+		_ = base64.StdEncoding.EncodeToString(privateKey[:])
+
+		time.Sleep(1 * time.Second)
+		done <- true
+
+		done = make(chan bool)
+		go Spinner(done, "Registering", "Registered")
+		err = api.Register("https://localhost:4892/v1/register", publicKeyBase64, nickname)
+
+		if err != nil {
+			done <- true
+			// time.Sleep(64 * time.Millisecond)
+
+			fmt.Printf("\r  %s\n", aurora.Bold(aurora.Red("Registration failed ✕")))
+			fmt.Printf("  %s %s\n", aurora.Bold(aurora.Red("Error:")), err)
+
+			os.Exit(1)
+		}
+
+		time.Sleep(1 * time.Second)
+		done <- true
+
+		time.Sleep(64 * time.Millisecond)
+	} else {
+		return
+	}
+}
+
+// Spinner creates a terminal loading prompt
+func Spinner(done chan bool, loading, loaded string) {
+	go func() {
 		s := spin.New()
 		s.Set(spin.Default)
-
-		var wg sync.WaitGroup
-		doneCh := make(chan struct{})
-
-		wg.Add(1)
-		go func() {
-			time.Sleep(1 * time.Second)
-			wg.Done()
-		}()
-
-		go func() {
-			wg.Wait()
-			close(doneCh)
-		}()
 
 	loop:
 		for {
 			select {
-			case <-doneCh:
-				fmt.Printf("\r  %s        ", aurora.Bold(aurora.Green("Registered ✓")))
+			case <-done:
+				fmt.Printf("\r  %s %s", aurora.Bold(aurora.Green(fmt.Sprintf("%s ✓", loaded))), strings.Repeat(" ", Abs(len(loading)-len(loaded))))
 				break loop
 			default:
-				fmt.Printf("\r  %s %s ", aurora.Bold(aurora.Cyan("Registering")), s.Next())
+				fmt.Printf("\r  %s %s ", aurora.Bold(aurora.Cyan(loading)), s.Next())
 				time.Sleep(64 * time.Millisecond)
 			}
 		}
-	} else {
-		return
+
+		time.Sleep(64 * time.Millisecond)
+	}()
+}
+
+// Abs gives the absolute value of the int
+func Abs(x int) int {
+	if x < 0 {
+		return -x
 	}
+	return x
 }

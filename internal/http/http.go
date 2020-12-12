@@ -20,6 +20,12 @@ import (
 func InitFileServer(metadata models.Metadata) {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
+		DisableKeepalive:      true,
+	})
+
+	app.Use(func(c *fiber.Ctx) error {
+		c.Request().Header.Add("Cache-Control", "no-cache")
+		return c.Next()
 	})
 
 	app.Use(filesystem.New(filesystem.Config{

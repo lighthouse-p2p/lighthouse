@@ -130,19 +130,27 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 }
 
 // JoinStreams can proxy data from stream 1 to stream 2 and vice-versa
-func JoinStreams(c1, c2 net.Conn) {
+// statsCallback will give the amount of data copied into the first stream
+func JoinStreams(c1, c2 net.Conn, statsCallback func(stats int64)) {
 	defer c1.Close()
 	defer c2.Close()
 
 	errc := make(chan error, 2)
+	statsc := make(chan int64)
+
 	go func() {
-		_, err := io.Copy(c1, c2)
+		stats, err := io.Copy(c1, c2)
+		log.Printf("OwO %d\n", stats)
+		statsc <- stats
 		errc <- err
 	}()
 	go func() {
 		_, err := io.Copy(c2, c1)
 		errc <- err
 	}()
+
+	statsCallback(<-statsc)
+
 	err := <-errc
 
 	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, context.Canceled) {

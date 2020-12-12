@@ -146,7 +146,7 @@ func (s *Session) Init(nickname string, st state.State, port int) error {
 
 							log.Printf("New stream, %d total streams!\n", session.NumStreams())
 
-							go wrapper.JoinStreams(stream, c)
+							go wrapper.JoinStreams(stream, c, func(stats int64) {})
 						}(l)
 					}
 				}()
@@ -257,7 +257,9 @@ func (s *Session) InitAnswer(signal models.Signal, push func(string)) error {
 						panic(err)
 					}
 
-					wrapper.JoinStreams(stream, proxyConn)
+					wrapper.JoinStreams(stream, proxyConn, func(stats int64) {
+						log.Printf("I sent %d bytes!\n", stats)
+					})
 				}(stream)
 			}
 		})

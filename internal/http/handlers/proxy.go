@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/proxy"
@@ -31,8 +33,10 @@ func (p *ProxyHandler) Handler(ctx *fiber.Ctx) error {
 		return ctx.SendStatus(400)
 	}
 
+	subPath := strings.Split(ctx.Path(), fmt.Sprintf("/%s", nickname))[1]
+
 	if port, ok := p.sessions.PortMap[nickname]; ok {
-		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d", port)); err != nil {
+		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d/%s", port, subPath)); err != nil {
 			return err
 		}
 	} else {
@@ -49,7 +53,9 @@ func (p *ProxyHandler) Handler(ctx *fiber.Ctx) error {
 		p.sessions.PortMap[nickname] = port
 		p.sessions.RTCSessions[nickname] = newSession
 
-		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d", port)); err != nil {
+		time.Sleep(1500 * time.Millisecond)
+
+		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d/%s", port, subPath)); err != nil {
 			return err
 		}
 	}

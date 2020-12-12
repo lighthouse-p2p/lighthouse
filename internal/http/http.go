@@ -47,7 +47,7 @@ func InitProxyServer(metadata *models.Metadata, sessions *rtc.Sessions, st *stat
 	proxyHandler := handlers.ProxyHandler{}
 	proxyHandler.Init(metadata, sessions, st)
 
-	app.Use("/proxy/:nick", proxyHandler.Handler)
+	app.Use("/proxy/:nick/*", proxyHandler.Handler)
 
 	fmt.Printf("  %s\n", aurora.Bold(aurora.Green("Proxy server is up ✓")))
 

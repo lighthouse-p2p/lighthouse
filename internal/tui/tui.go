@@ -164,7 +164,7 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 			sess := &rtc.Session{}
 			sess.InitAnswer(signal, func(s string) {
 				signalingClient.Push(s)
-			})
+			}, metadata.PubKey)
 		}
 	}()
 

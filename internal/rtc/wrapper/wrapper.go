@@ -140,8 +140,7 @@ func JoinStreams(c1, c2 net.Conn, statsCallback func(stats int64)) {
 
 	go func() {
 		stats, err := io.Copy(c1, c2)
-		log.Printf("OwO %d\n", stats)
-		statsc <- stats
+		statsc <- stats - 150
 		errc <- err
 	}()
 	go func() {

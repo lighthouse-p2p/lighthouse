@@ -165,7 +165,7 @@ func (s *Session) Init(nickname string, st state.State, port int) error {
 }
 
 // InitAnswer initializes a WebRTC session as an answer
-func (s *Session) InitAnswer(signal models.Signal, push func(string)) error {
+func (s *Session) InitAnswer(signal models.Signal, push func(string), myKey string) error {
 	config := webrtc.Configuration{
 		ICEServers: []webrtc.ICEServer{
 			{
@@ -257,8 +257,23 @@ func (s *Session) InitAnswer(signal models.Signal, push func(string)) error {
 						panic(err)
 					}
 
-					wrapper.JoinStreams(stream, proxyConn, func(stats int64) {
+					go wrapper.JoinStreams(stream, proxyConn, func(stats int64) {
 						log.Printf("I sent %d bytes!\n", stats)
+
+						mb := fmt.Sprintf("%f", float64(stats)/1000000)
+						statsSignal := models.Signal{
+							Type: "c",
+							SDP:  mb,
+							From: myKey,
+							To:   signal.From,
+						}
+
+						jsonStats, err := json.Marshal(statsSignal)
+						if err != nil {
+							return
+						}
+
+						push(string(jsonStats))
 					})
 				}(stream)
 			}

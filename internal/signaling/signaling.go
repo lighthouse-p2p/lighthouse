@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
+	"github.com/lighthouse-p2p/lighthouse/internal/utils"
 	"golang.org/x/crypto/nacl/sign"
 )
 
@@ -23,7 +24,7 @@ type Client struct {
 
 // Init will authenticate with the signalling server
 func (c *Client) Init(metadata models.Metadata) error {
-	addr := fmt.Sprintf("ws://%s/v1/ws/signaling?pub_key=%s", metadata.Host, metadata.PubKey)
+	addr := utils.TranslateURL(fmt.Sprintf("ws://%s/v1/ws/signaling?pub_key=%s", metadata.Host, metadata.PubKey))
 
 	c.Metadata = metadata
 	c.Chans = make(map[string]chan string)

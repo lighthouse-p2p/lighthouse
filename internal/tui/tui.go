@@ -197,7 +197,7 @@ func AlreadyRegisteredFlow(metadata models.Metadata, launchDesktopApp bool) {
 			done <- true
 
 			if err != nil {
-				time.Sleep(64 * time.Millisecond)
+				// time.Sleep(64 * time.Millisecond)
 
 				fmt.Printf("\r  %s\n", aurora.Bold(aurora.Red("Launching the desktop app failed ✕")))
 				fmt.Printf("  %s %s\n", aurora.Bold(aurora.Red("Error:")), err)

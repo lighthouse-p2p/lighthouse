@@ -14,6 +14,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
+	"github.com/lighthouse-p2p/lighthouse/internal/http"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
 	"github.com/lighthouse-p2p/lighthouse/internal/rtc"
 	"github.com/lighthouse-p2p/lighthouse/internal/signaling"
@@ -174,11 +175,14 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 	state.Metadata = metadata
 	state.SignalingClient = signalingClient
 
+	sessions := &rtc.Sessions{}
+	sessions.Init()
+
 	time.Sleep(250 * time.Millisecond)
 	fmt.Printf("\n")
 
-	// TODO: enable the HTTP server when testing with multiple nodes
-	// go http.InitFileServer(metadata)
+	go http.InitFileServer(metadata)
+	go http.InitProxyServer(&metadata, sessions, state)
 
 	// go func() {
 	// 	sess := &rtc.Session{}

@@ -179,6 +179,8 @@ func (s *Session) Init(nickname string, st state.State, port int) error {
 		}
 
 		s.PeerConnection = peerConnection
+
+		errorChan <- nil
 	}()
 
 	select {

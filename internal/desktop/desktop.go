@@ -16,5 +16,10 @@ func LaunchDesktopApp() error {
 		return cmd.Start()
 	}
 
+	if runtime.GOOS == "darwin" {
+		cmd := exec.Command("open", "./build/lighthouse-desktop.app")
+		return cmd.Start()
+	}
+
 	return ErrDesktopNotSupported
 }

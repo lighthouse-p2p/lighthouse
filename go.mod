@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/AlecAivazis/survey/v2 v2.2.5
 	github.com/gofiber/fiber/v2 v2.2.5
+	github.com/gofiber/template v1.6.6
 	github.com/gojektech/heimdall/v6 v6.1.0
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/gorilla/websocket v1.4.2

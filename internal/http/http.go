@@ -9,6 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/filesystem"
+	"github.com/gofiber/template/html"
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
 	"github.com/lighthouse-p2p/lighthouse/internal/http/handlers"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
@@ -42,9 +43,12 @@ func InitFileServer(metadata models.Metadata) {
 // InitProxyServer initializes the proxy server
 func InitProxyServer(metadata *models.Metadata, sessions *rtc.Sessions, st *state.State) {
 	time.Sleep(time.Second)
+	engine := html.New("./homepage", ".html")
 
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
+		Views:                 engine,
+		DisableKeepalive:      true,
 	})
 
 	app.Get("/coins", func(c *fiber.Ctx) error {
@@ -60,6 +64,12 @@ func InitProxyServer(metadata *models.Metadata, sessions *rtc.Sessions, st *stat
 		return c.SendString(fmt.Sprintf("Number of Goroutines: %d", runtime.NumGoroutine()))
 	})
 
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.Render("index", fiber.Map{
+			"PubKey":   metadata.PubKey,
+			"NickName": metadata.NickName,
+		})
+	})
 	app.Static("/", "./homepage")
 
 	proxyHandler := handlers.ProxyHandler{}

@@ -49,7 +49,7 @@ With everything in place, your current directory will look like
 │───data
 │   └───...
 │───...
-└───metdata.json
+└───metadata.json
 ```
 
 Now, just run the binary same as in the first step. It will authenticate, start the proxy servers and optionally launch the desktop application. At this point you could connect to different peers and start experiencing some p2p magic.

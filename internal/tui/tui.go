@@ -14,6 +14,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/lighthouse-p2p/lighthouse/internal/api"
+	"github.com/lighthouse-p2p/lighthouse/internal/desktop"
 	"github.com/lighthouse-p2p/lighthouse/internal/http"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
 	"github.com/lighthouse-p2p/lighthouse/internal/rtc"
@@ -183,6 +184,28 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 
 	go http.InitFileServer(metadata)
 	go http.InitProxyServer(&metadata, sessions, state)
+	go func() {
+		time.Sleep(time.Second)
+
+		done = make(chan bool)
+		go Spinner(done, "Starting desktop app", "Started the desktop app")
+
+		err = desktop.LaunchDesktopApp()
+		time.Sleep(250 * time.Millisecond)
+
+		done <- true
+
+		if err != nil {
+			time.Sleep(64 * time.Millisecond)
+
+			fmt.Printf("\r  %s\n", aurora.Bold(aurora.Red("Launching the desktop app failed ✕")))
+			fmt.Printf("  %s %s\n", aurora.Bold(aurora.Red("Error:")), err)
+
+			if !errors.Is(err, desktop.ErrDesktopNotSupported) {
+				os.Exit(1)
+			}
+		}
+	}()
 
 	// go func() {
 	// 	sess := &rtc.Session{}

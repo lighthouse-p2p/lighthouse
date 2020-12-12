@@ -42,7 +42,7 @@ func InitFileServer(metadata models.Metadata) {
 
 // InitProxyServer initializes the proxy server
 func InitProxyServer(metadata *models.Metadata, sessions *rtc.Sessions, st *state.State) {
-	time.Sleep(time.Second)
+	time.Sleep(500 * time.Millisecond)
 	engine := html.New("./homepage", ".html")
 
 	app := fiber.New(fiber.Config{

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/proxy"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
 	"github.com/lighthouse-p2p/lighthouse/internal/rtc"
 	"github.com/lighthouse-p2p/lighthouse/internal/state"
@@ -36,29 +35,23 @@ func (p *ProxyHandler) Handler(ctx *fiber.Ctx) error {
 	subPath := strings.Split(ctx.Path(), fmt.Sprintf("/%s", nickname))[1]
 
 	if port, ok := p.sessions.PortMap[nickname]; ok {
-		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d%s", port, subPath)); err != nil {
-			return err
-		}
-	} else {
-		totalSessions := len(p.sessions.PortMap)
-		port := 42001 + totalSessions
-
-		if totalSessions == 9 {
-			return ctx.Status(409).SendString("Port overflow")
-		}
-
-		newSession := &rtc.Session{}
-		newSession.Init(nickname, *p.st, port)
-
-		p.sessions.PortMap[nickname] = port
-		p.sessions.RTCSessions[nickname] = newSession
-
-		time.Sleep(1500 * time.Millisecond)
-
-		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d%s", port, subPath)); err != nil {
-			return err
-		}
+		return ctx.Redirect(fmt.Sprintf("http://localhost:%d%s", port, subPath))
 	}
 
-	return ctx.SendStatus(404)
+	totalSessions := len(p.sessions.PortMap)
+	port := 42001 + totalSessions
+
+	if totalSessions == 9 {
+		return ctx.Status(409).SendString("Port overflow")
+	}
+
+	newSession := &rtc.Session{}
+	newSession.Init(nickname, *p.st, port)
+
+	p.sessions.PortMap[nickname] = port
+	p.sessions.RTCSessions[nickname] = newSession
+
+	time.Sleep(1500 * time.Millisecond)
+
+	return ctx.Redirect(fmt.Sprintf("http://localhost:%d%s", port, subPath))
 }

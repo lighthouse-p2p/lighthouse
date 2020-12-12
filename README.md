@@ -1,4 +1,4 @@
-<h1 align="center">Lighthouse 🕯</h1>
+<h1 align="center">Lighthouse</h1>
 <p align="center">The peer for Lighthouse p2p</p>
 
 ---

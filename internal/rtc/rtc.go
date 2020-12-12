@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"time"
 
@@ -131,8 +130,6 @@ func (s *Session) Init(nickname string, st state.State, port int) error {
 
 				dataChannel.OnOpen(func() {
 					go func() {
-						log.Println("Connection seems to be up, preparing a multiplexed session")
-
 						proxySrv, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
 						if err != nil {
 							panic(err)
@@ -162,8 +159,6 @@ func (s *Session) Init(nickname string, st state.State, port int) error {
 								if err != nil {
 									panic(err)
 								}
-
-								log.Printf("New stream, %d total streams!\n", session.NumStreams())
 
 								go wrapper.JoinStreams(stream, c, func(stats int64) {})
 							}(l)
@@ -249,12 +244,7 @@ func (s *Session) InitAnswer(signal models.Signal, push func(string), myKey stri
 
 	// setup data channel
 	peerConnection.OnDataChannel(func(d *webrtc.DataChannel) {
-		fmt.Printf("New DataChannel %s %d\n", d.Label(), d.ID())
-
-		// Register channel opening handling
 		d.OnOpen(func() {
-			log.Println("Connection seems to be up, preparing a multiplexed session")
-
 			conn, err := wrapper.WrapConn(d, &wrapper.NilAddr{}, &wrapper.NilAddr{})
 			if err != nil {
 				d.Close()
@@ -285,8 +275,6 @@ func (s *Session) InitAnswer(signal models.Signal, push func(string), myKey stri
 					}
 
 					go wrapper.JoinStreams(stream, proxyConn, func(stats int64) {
-						log.Printf("I sent %d bytes!\n", stats)
-
 						mb := fmt.Sprintf("%f", float64(stats)/1000000)
 						statsSignal := models.Signal{
 							Type: "c",

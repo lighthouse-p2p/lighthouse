@@ -9,6 +9,7 @@ import (
 
 	"github.com/gojektech/heimdall/v6/httpclient"
 	"github.com/lighthouse-p2p/lighthouse/internal/models"
+	"github.com/lighthouse-p2p/lighthouse/internal/utils"
 )
 
 // Register registers a public key and nickname that on the network
@@ -23,7 +24,7 @@ func Register(url, pubKey, nickName string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", utils.TranslateURL(url), bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}

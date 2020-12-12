@@ -7,13 +7,14 @@ import (
 	"net/http"
 
 	"github.com/gojektech/heimdall/v6/httpclient"
+	"github.com/lighthouse-p2p/lighthouse/internal/utils"
 )
 
 // Coins fetches the total coins
 func Coins(url, pubKey string) (string, error) {
 	client := httpclient.NewClient()
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s?pub_key=%s", url, pubKey), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s?pub_key=%s", utils.TranslateURL(url), pubKey), nil)
 	if err != nil {
 		return "", err
 	}

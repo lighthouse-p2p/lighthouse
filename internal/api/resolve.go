@@ -7,13 +7,14 @@ import (
 	"net/http"
 
 	"github.com/gojektech/heimdall/v6/httpclient"
+	"github.com/lighthouse-p2p/lighthouse/internal/utils"
 )
 
 // Resolve fetches the public key for a nickname
 func Resolve(url, nickname string) (string, error) {
 	client := httpclient.NewClient()
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", url, nickname), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/%s", utils.TranslateURL(url), nickname), nil)
 	if err != nil {
 		return "", err
 	}

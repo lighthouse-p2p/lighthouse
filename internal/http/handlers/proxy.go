@@ -36,7 +36,7 @@ func (p *ProxyHandler) Handler(ctx *fiber.Ctx) error {
 	subPath := strings.Split(ctx.Path(), fmt.Sprintf("/%s", nickname))[1]
 
 	if port, ok := p.sessions.PortMap[nickname]; ok {
-		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d/%s", port, subPath)); err != nil {
+		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d%s", port, subPath)); err != nil {
 			return err
 		}
 	} else {
@@ -55,7 +55,7 @@ func (p *ProxyHandler) Handler(ctx *fiber.Ctx) error {
 
 		time.Sleep(1500 * time.Millisecond)
 
-		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d/%s", port, subPath)); err != nil {
+		if err := proxy.Do(ctx, fmt.Sprintf("http://localhost:%d%s", port, subPath)); err != nil {
 			return err
 		}
 	}

@@ -1,0 +1,71 @@
+@import url(./font.css);
+
+body {
+  width: 100%;
+  height: 100%;
+
+  margin: 0;
+  padding: 0;
+
+  background-color: #202124;
+  color: whitesmoke;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: "JetBrains Mono";
+}
+
+.title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-container .title {
+  font-size: 48px;
+  font-weight: 900;
+}
+
+.info-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0;
+  padding: 0;
+}
+
+.info > * {
+  font-size: 26px;
+}
+
+.flex-col {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.error {
+  max-width: 720px;
+  text-align: center;
+}

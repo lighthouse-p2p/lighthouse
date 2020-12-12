@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -35,7 +36,10 @@ func main() {
 			log.Fatalln("data/ not found\nThis directory is served when a new peer connection is made\nPlease make the data/ directory to connect")
 		}
 
-		go tui.AlreadyRegisteredFlow(metadata)
+		noGUI := flag.Bool("no-gui", false, "Disable launching of the desktop app")
+		flag.Parse()
+
+		go tui.AlreadyRegisteredFlow(metadata, !*noGUI)
 
 		// Block forever
 		select {}

@@ -138,7 +138,7 @@ func StartNewUserFlow() {
 }
 
 // AlreadyRegisteredFlow is run when metadata.json is present
-func AlreadyRegisteredFlow(metadata models.Metadata) {
+func AlreadyRegisteredFlow(metadata models.Metadata, launchDesktopApp bool) {
 	done := make(chan bool)
 	go Spinner(done, "Authenticating", "Authenticated")
 
@@ -184,28 +184,32 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 
 	go http.InitFileServer(metadata)
 	go http.InitProxyServer(&metadata, sessions, state)
-	go func() {
-		time.Sleep(time.Second)
+	if launchDesktopApp {
+		go func() {
+			time.Sleep(time.Second)
 
-		done = make(chan bool)
-		go Spinner(done, "Starting desktop app", "Started the desktop app")
+			done = make(chan bool)
+			go Spinner(done, "Starting desktop app", "Started the desktop app")
 
-		err = desktop.LaunchDesktopApp()
-		time.Sleep(250 * time.Millisecond)
+			err = desktop.LaunchDesktopApp()
+			time.Sleep(250 * time.Millisecond)
 
-		done <- true
+			done <- true
 
-		if err != nil {
-			time.Sleep(64 * time.Millisecond)
+			if err != nil {
+				time.Sleep(64 * time.Millisecond)
 
-			fmt.Printf("\r  %s\n", aurora.Bold(aurora.Red("Launching the desktop app failed ✕")))
-			fmt.Printf("  %s %s\n", aurora.Bold(aurora.Red("Error:")), err)
+				fmt.Printf("\r  %s\n", aurora.Bold(aurora.Red("Launching the desktop app failed ✕")))
+				fmt.Printf("  %s %s\n", aurora.Bold(aurora.Red("Error:")), err)
 
-			if !errors.Is(err, desktop.ErrDesktopNotSupported) {
-				os.Exit(1)
+				if !errors.Is(err, desktop.ErrDesktopNotSupported) {
+					os.Exit(1)
+				}
 			}
-		}
-	}()
+
+			fmt.Printf("\n")
+		}()
+	}
 
 	// go func() {
 	// 	sess := &rtc.Session{}

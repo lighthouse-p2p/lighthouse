@@ -60,6 +60,8 @@ func InitProxyServer(metadata *models.Metadata, sessions *rtc.Sessions, st *stat
 		return c.SendString(fmt.Sprintf("Number of Goroutines: %d", runtime.NumGoroutine()))
 	})
 
+	app.Static("/", "./homepage")
+
 	proxyHandler := handlers.ProxyHandler{}
 	proxyHandler.Init(metadata, sessions, st)
 

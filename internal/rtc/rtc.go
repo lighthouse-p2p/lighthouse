@@ -2,6 +2,7 @@ package rtc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -15,6 +16,9 @@ import (
 	"github.com/pion/webrtc/v2"
 	"github.com/xtaci/smux"
 )
+
+// ErrTimeout is sent back after the RTCConnection times out
+var ErrTimeout = errors.New("Peer connection timed out, this mostly happens when the other peer is down")
 
 // Sessions holds a map for open RTC sessions and the assigned ports
 type Sessions struct {
@@ -41,127 +45,148 @@ type Session struct {
 
 // Init initializes a WebRTC session as an offer
 func (s *Session) Init(nickname string, st state.State, port int) error {
-	pubKey, err := api.Resolve(fmt.Sprintf("http://%s/v1/resolve", st.Metadata.Host), nickname)
-	if err != nil {
-		return err
-	}
+	timeoutChan := make(chan bool)
+	go func() {
+		time.Sleep(20 * time.Second)
+		timeoutChan <- false
+	}()
 
-	s.RemotePeer.PubKey = pubKey
-	s.RemotePeer.NickName = nickname
+	errorChan := make(chan error)
+	go func() {
+		pubKey, err := api.Resolve(fmt.Sprintf("http://%s/v1/resolve", st.Metadata.Host), nickname)
+		if err != nil {
+			errorChan <- err
+			return
+		}
 
-	config := webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{"stun:stun.l.google.com:19302"},
+		s.RemotePeer.PubKey = pubKey
+		s.RemotePeer.NickName = nickname
+
+		config := webrtc.Configuration{
+			ICEServers: []webrtc.ICEServer{
+				{
+					URLs: []string{"stun:stun.l.google.com:19302"},
+				},
 			},
-		},
-	}
+		}
 
-	peerConnection, err := webrtc.NewPeerConnection(config)
-	if err != nil {
-		return err
-	}
+		peerConnection, err := webrtc.NewPeerConnection(config)
+		if err != nil {
+			errorChan <- err
+			return
+		}
 
-	offer, err := peerConnection.CreateOffer(nil)
-	if err != nil {
-		return err
-	}
+		offer, err := peerConnection.CreateOffer(nil)
+		if err != nil {
+			errorChan <- err
+			return
+		}
 
-	peerConnection.SetLocalDescription(offer)
+		peerConnection.SetLocalDescription(offer)
 
-	localSDP := *peerConnection.LocalDescription()
+		localSDP := *peerConnection.LocalDescription()
 
-	localSDP.SDP = utils.StripSDP(localSDP.SDP)
-	encodedLocalSDP, err := utils.Encode(localSDP)
-	if err != nil {
-		return err
-	}
+		localSDP.SDP = utils.StripSDP(localSDP.SDP)
+		encodedLocalSDP, err := utils.Encode(localSDP)
+		if err != nil {
+			errorChan <- err
+			return
+		}
 
-	sig := models.Signal{
-		To:   pubKey,
-		From: st.Metadata.PubKey,
-		SDP:  encodedLocalSDP,
-		Type: "o",
-	}
-	jsonSignal, err := json.Marshal(sig)
-	if err != nil {
-		return err
-	}
+		sig := models.Signal{
+			To:   pubKey,
+			From: st.Metadata.PubKey,
+			SDP:  encodedLocalSDP,
+			Type: "o",
+		}
+		jsonSignal, err := json.Marshal(sig)
+		if err != nil {
+			errorChan <- err
+			return
+		}
 
-	st.SignalingClient.Push(string(jsonSignal))
+		st.SignalingClient.Push(string(jsonSignal))
 
-	for {
-		if _, ok := st.SignalingClient.Chans[pubKey]; ok {
-			remoteSDP := <-st.SignalingClient.Chans[pubKey]
+		for {
+			if _, ok := st.SignalingClient.Chans[pubKey]; ok {
+				remoteSDP := <-st.SignalingClient.Chans[pubKey]
 
-			var remoteDesc webrtc.SessionDescription
-			err = utils.Decode(remoteSDP, &remoteDesc)
-			if err != nil {
-				continue
-			}
+				var remoteDesc webrtc.SessionDescription
+				err = utils.Decode(remoteSDP, &remoteDesc)
+				if err != nil {
+					continue
+				}
 
-			err = peerConnection.SetRemoteDescription(remoteDesc)
-			if err != nil {
-				return err
-			}
+				err = peerConnection.SetRemoteDescription(remoteDesc)
+				if err != nil {
+					errorChan <- err
+					return
+				}
 
-			dataChannel, err := peerConnection.CreateDataChannel("data", nil)
-			if err != nil {
-				return err
-			}
+				dataChannel, err := peerConnection.CreateDataChannel("data", nil)
+				if err != nil {
+					errorChan <- err
+					return
+				}
 
-			dataChannel.OnOpen(func() {
-				go func() {
-					log.Println("Connection seems to be up, preparing a multiplexed session")
+				dataChannel.OnOpen(func() {
+					go func() {
+						log.Println("Connection seems to be up, preparing a multiplexed session")
 
-					proxySrv, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
-					if err != nil {
-						panic(err)
-					}
-
-					s.Listener = &proxySrv
-
-					conn, err := wrapper.WrapConn(dataChannel, &wrapper.NilAddr{}, &wrapper.NilAddr{})
-					if err != nil {
-						dataChannel.Close()
-						peerConnection.Close()
-					}
-
-					session, err := smux.Client(conn, nil)
-					if err != nil {
-						panic(err)
-					}
-
-					for {
-						l, err := proxySrv.Accept()
+						proxySrv, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
 						if err != nil {
 							panic(err)
 						}
 
-						go func(c net.Conn) {
-							stream, err := session.OpenStream()
+						s.Listener = &proxySrv
+
+						conn, err := wrapper.WrapConn(dataChannel, &wrapper.NilAddr{}, &wrapper.NilAddr{})
+						if err != nil {
+							dataChannel.Close()
+							peerConnection.Close()
+						}
+
+						session, err := smux.Client(conn, nil)
+						if err != nil {
+							panic(err)
+						}
+
+						for {
+							l, err := proxySrv.Accept()
 							if err != nil {
 								panic(err)
 							}
 
-							log.Printf("New stream, %d total streams!\n", session.NumStreams())
+							go func(c net.Conn) {
+								stream, err := session.OpenStream()
+								if err != nil {
+									panic(err)
+								}
 
-							go wrapper.JoinStreams(stream, c, func(stats int64) {})
-						}(l)
-					}
-				}()
-			})
+								log.Printf("New stream, %d total streams!\n", session.NumStreams())
 
-			break
-		} else {
-			time.Sleep(250 * time.Millisecond)
-			continue
+								go wrapper.JoinStreams(stream, c, func(stats int64) {})
+							}(l)
+						}
+					}()
+				})
+
+				break
+			} else {
+				time.Sleep(250 * time.Millisecond)
+				continue
+			}
 		}
+
+		s.PeerConnection = peerConnection
+	}()
+
+	select {
+	case err := <-errorChan:
+		return err
+	case <-timeoutChan:
+		return ErrTimeout
 	}
-
-	s.PeerConnection = peerConnection
-
-	return nil
 }
 
 // InitAnswer initializes a WebRTC session as an answer

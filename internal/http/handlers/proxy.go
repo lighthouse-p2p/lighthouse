@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -32,6 +34,12 @@ func (p *ProxyHandler) Handler(ctx *fiber.Ctx) error {
 		return ctx.SendStatus(400)
 	}
 
+	validationRegex := regexp.MustCompile("^[a-z]+$")
+
+	if !validationRegex.Match([]byte(nickname)) {
+		return errors.New("The nickname is invalid")
+	}
+
 	if nickname == p.metadata.NickName {
 		return ctx.Status(401).SendString("Sorry can't connect proxy to myself")
 	}
@@ -50,7 +58,11 @@ func (p *ProxyHandler) Handler(ctx *fiber.Ctx) error {
 	}
 
 	newSession := &rtc.Session{}
-	newSession.Init(nickname, *p.st, port)
+	err := newSession.Init(nickname, *p.st, port)
+
+	if err != nil {
+		return err
+	}
 
 	p.sessions.PortMap[nickname] = port
 	p.sessions.RTCSessions[nickname] = newSession

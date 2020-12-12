@@ -64,3 +64,8 @@ html {
   display: flex;
   flex-direction: column;
 }
+
+.error {
+  max-width: 720px;
+  text-align: center;
+}

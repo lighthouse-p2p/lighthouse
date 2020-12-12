@@ -49,6 +49,11 @@ func InitProxyServer(metadata *models.Metadata, sessions *rtc.Sessions, st *stat
 		DisableStartupMessage: true,
 		Views:                 engine,
 		DisableKeepalive:      true,
+		ErrorHandler: func(c *fiber.Ctx, e error) error {
+			return c.Render("error", fiber.Map{
+				"Error": e.Error(),
+			})
+		},
 	})
 
 	app.Get("/coins", func(c *fiber.Ctx) error {

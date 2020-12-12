@@ -32,6 +32,10 @@ func (p *ProxyHandler) Handler(ctx *fiber.Ctx) error {
 		return ctx.SendStatus(400)
 	}
 
+	if nickname == p.metadata.NickName {
+		return ctx.Status(401).SendString("Sorry can't connect proxy to myself")
+	}
+
 	subPath := strings.Split(ctx.Path(), fmt.Sprintf("/%s", nickname))[1]
 
 	if port, ok := p.sessions.PortMap[nickname]; ok {

@@ -16,16 +16,31 @@ import (
 	"github.com/xtaci/smux"
 )
 
+// Sessions holds a map for open RTC sessions and the assigned ports
+type Sessions struct {
+	RTCSessions map[string]*Session
+	PortMap     map[string]int
+}
+
+// Init initializes the session maps with empty values
+func (s *Sessions) Init() {
+	s.PortMap = make(map[string]int)
+	s.RTCSessions = make(map[string]*Session)
+}
+
 // Session holds all the session information for a WebRTC session
 type Session struct {
 	RemotePeer struct {
 		PubKey   string
 		NickName string
 	}
+
+	Listener *net.Listener
+	*webrtc.PeerConnection
 }
 
 // Init initializes a WebRTC session as an offer
-func (s *Session) Init(nickname string, st state.State) error {
+func (s *Session) Init(nickname string, st state.State, port int) error {
 	pubKey, err := api.Resolve(fmt.Sprintf("http://%s/v1/resolve", st.Metadata.Host), nickname)
 	if err != nil {
 		return err
@@ -98,10 +113,12 @@ func (s *Session) Init(nickname string, st state.State) error {
 			dataChannel.OnOpen(func() {
 				log.Println("Connection seems to be up, preparing a multiplexed session")
 
-				proxySrv, err := net.Listen("tcp4", "127.0.0.1:3005")
+				proxySrv, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
 				if err != nil {
 					panic(err)
 				}
+
+				s.Listener = &proxySrv
 
 				conn, err := wrapper.WrapConn(dataChannel, &wrapper.NilAddr{}, &wrapper.NilAddr{})
 				if err != nil {
@@ -139,6 +156,8 @@ func (s *Session) Init(nickname string, st state.State) error {
 			continue
 		}
 	}
+
+	s.PeerConnection = peerConnection
 
 	return nil
 }
@@ -196,6 +215,8 @@ func (s *Session) InitAnswer(signal models.Signal, push func(string)) error {
 	}
 
 	push(string(jsonSignal))
+
+	s.PeerConnection = peerConnection
 
 	// setup data channel
 	peerConnection.OnDataChannel(func(d *webrtc.DataChannel) {

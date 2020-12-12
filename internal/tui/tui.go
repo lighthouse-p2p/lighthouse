@@ -180,15 +180,15 @@ func AlreadyRegisteredFlow(metadata models.Metadata) {
 	// TODO: enable the HTTP server when testing with multiple nodes
 	// go http.InitFileServer(metadata)
 
-	go func() {
-		sess := &rtc.Session{}
+	// go func() {
+	// 	sess := &rtc.Session{}
 
-		err = sess.Init("akshitg", *state)
+	// 	err = sess.Init("akshitg", *state)
 
-		if err != nil {
-			log.Fatalf("%s\n", err)
-		}
-	}()
+	// 	if err != nil {
+	// 		log.Fatalf("%s\n", err)
+	// 	}
+	// }()
 
 	select {}
 

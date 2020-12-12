@@ -111,43 +111,45 @@ func (s *Session) Init(nickname string, st state.State, port int) error {
 			}
 
 			dataChannel.OnOpen(func() {
-				log.Println("Connection seems to be up, preparing a multiplexed session")
+				go func() {
+					log.Println("Connection seems to be up, preparing a multiplexed session")
 
-				proxySrv, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
-				if err != nil {
-					panic(err)
-				}
-
-				s.Listener = &proxySrv
-
-				conn, err := wrapper.WrapConn(dataChannel, &wrapper.NilAddr{}, &wrapper.NilAddr{})
-				if err != nil {
-					dataChannel.Close()
-					peerConnection.Close()
-				}
-
-				session, err := smux.Client(conn, nil)
-				if err != nil {
-					panic(err)
-				}
-
-				for {
-					l, err := proxySrv.Accept()
+					proxySrv, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", port))
 					if err != nil {
 						panic(err)
 					}
 
-					go func(c net.Conn) {
-						stream, err := session.OpenStream()
+					s.Listener = &proxySrv
+
+					conn, err := wrapper.WrapConn(dataChannel, &wrapper.NilAddr{}, &wrapper.NilAddr{})
+					if err != nil {
+						dataChannel.Close()
+						peerConnection.Close()
+					}
+
+					session, err := smux.Client(conn, nil)
+					if err != nil {
+						panic(err)
+					}
+
+					for {
+						l, err := proxySrv.Accept()
 						if err != nil {
 							panic(err)
 						}
 
-						log.Printf("New stream, %d total streams!\n", session.NumStreams())
+						go func(c net.Conn) {
+							stream, err := session.OpenStream()
+							if err != nil {
+								panic(err)
+							}
 
-						go wrapper.JoinStreams(stream, c)
-					}(l)
-				}
+							log.Printf("New stream, %d total streams!\n", session.NumStreams())
+
+							go wrapper.JoinStreams(stream, c)
+						}(l)
+					}
+				}()
 			})
 
 			break

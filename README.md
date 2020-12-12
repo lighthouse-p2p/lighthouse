@@ -3,6 +3,12 @@
 
 ---
 
+## Screenshots
+
+<img src="./screenshots/home.png" width="786px" alt="home" />
+<img src="./screenshots/peer.png" width="786px" alt="peer" />
+<img src="./screenshots/cli.png" alt="cli" />
+
 ## Building
 
 ### Requirements

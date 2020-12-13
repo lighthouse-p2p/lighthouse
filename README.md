@@ -8,6 +8,7 @@
 <img src="./screenshots/home.png" width="786px" alt="home" />
 <img src="./screenshots/peer.png" width="786px" alt="peer" />
 <img src="./screenshots/cli.png" alt="cli" />
+<img src="./screenshots/error.png" width="786px" alt="error" />
 
 ## Download
 

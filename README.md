@@ -9,6 +9,13 @@
 <img src="./screenshots/peer.png" width="786px" alt="peer" />
 <img src="./screenshots/cli.png" alt="cli" />
 
+## Download
+
+v1 is here 🎉
+https://github.com/lighthouse-p2p/lighthouse/releases/tag/v1.0.0
+
+**NOTE:** This is a pre-release
+
 ## Building
 
 ### Requirements

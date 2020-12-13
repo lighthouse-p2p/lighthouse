@@ -12,7 +12,7 @@
 ## Download
 
 v1 is here 🎉
-https://github.com/lighthouse-p2p/lighthouse/releases/tag/v1.0.0
+[v1.0.0 (release)](https://github.com/lighthouse-p2p/lighthouse/releases/tag/v1.0.0)
 
 **NOTE:** This is a pre-release
 

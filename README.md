@@ -3,6 +3,10 @@
 
 ---
 
+This was a hackathon project. I have no intention to continue working on it
+
+---
+
 ## Screenshots
 
 <img src="./screenshots/home.png" width="786px" alt="home" />

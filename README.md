@@ -3,7 +3,7 @@
 
 ---
 
-This was a hackathon project. I have no intention to continue working on it
+This was a hackathon project. We have no intention to continue working on it
 
 ---
 
